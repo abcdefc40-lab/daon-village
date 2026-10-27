@@ -1,11 +1,10 @@
 (() => {
 "use strict";
 const C = window.DAON_CONFIG;
-const BREEDS={maltese:"말티즈",poodle:"푸들",pom:"포메라니안",bichon:"비숑",shihtzu:"시츄",golden:"골든리트리버",corgi:"웰시코기",schnauzer:"슈나우저"};
-const T=32, STEP_MS=190, DOGH=76;
+const DD=window.DAON_DOGDATA,BREEDS=Object.fromEntries(Object.entries(DD.BREEDS).map(([k,v])=>[k,v.name])),STYLE_NAME=s=>DD.STYLES[s]?.name||"";
+const T=32, STEP_MS=190, DOGH=84;
 // ---------- 이미지 ----------
 const IMG={};const load=(k,f)=>{const i=new Image();i.src="assets/"+f;IMG[k]=i;};
-for(const k in BREEDS){load("dog_"+k,`dog_${k}.webp`);for(const v of["front","back","side"])load(`dog_${k}_${v}`,`dog_${k}_${v}.webp`);}
 for(const v of["front","back","side"])load("groomer_"+v,`groomer_${v}.webp`);
 ["village","interior","shop","tree","bench","board","bush"].forEach(k=>load(k,k+".webp"));
 const ok=i=>i&&i.complete&&i.naturalWidth;
@@ -32,24 +31,41 @@ const walk=(S,x,y)=>x>=0&&y>=0&&x<S.cols&&y<S.rows&&!S.grid[y*S.cols+x];
 const cv=document.getElementById("game"),g=cv.getContext("2d"),$=id=>document.getElementById(id);
 let save=null;try{save=JSON.parse(localStorage.getItem("daonVillage3")||"null");}catch{}
 const mkActor=(o)=>Object.assign({tx:0,ty:0,px:0,py:0,fx:0,fy:0,dir:"down",prog:1,moving:false,bubble:null,bubbleT:0},o);
-const P=mkActor({nick:"",breed:"maltese",scene:"out"});
+const P=mkActor({nick:"",breed:"maltese",style:"natural",scene:"out"});
 const others=new Map();
 let keys={},joyDir=null,path=[],uiOpen=false,started=false,near=null,typing=false;
 function place(a,S,x,y,dir){a.scene=S.id;a.tx=a.fx=x;a.ty=a.fy=y;a.px=x*T+16;a.py=y*T+28;a.prog=1;if(dir)a.dir=dir;}
-// ---------- 시작 화면 ----------
-let selBreed=save?.breed||"maltese";
-for(const k in BREEDS){const d=document.createElement("div");d.className="breed"+(k===selBreed?" sel":"");d.dataset.k=k;
-  const im=document.createElement("img");im.src=`assets/dog_${k}_front.webp`;im.alt=BREEDS[k];
-  const t=document.createElement("div");t.textContent=BREEDS[k];d.append(im,t);
-  d.onclick=()=>{selBreed=k;document.querySelectorAll(".breed").forEach(e=>e.classList.toggle("sel",e.dataset.k===k));};$("breeds").append(d);}
+// ---------- 시작 화면 (견종 → 미용스타일 → 닉네임) ----------
+let selBreed=save?.breed&&BREEDS[save.breed]?save.breed:"maltese";
+let selStyle=DD.validStyle(selBreed,save?.style)?save.style:DD.defaultStyle(selBreed);
+function thumb(breed,style,view,sz){ // 스프라이트에서 강아지 부분만 잘라 낸 썸네일
+  const c=document.createElement("canvas");c.width=c.height=sz;const x=c.getContext("2d"),S=DaonDog.SS,sp=DaonDog.render(breed,style,view,-1);
+  x.drawImage(sp,22*S,4*S,76*S,76*S,0,0,sz,sz);return c;}
+function buildBreeds(){$("breeds").innerHTML="";
+  for(const k in BREEDS){const d=document.createElement("div");d.className="breed"+(k===selBreed?" sel":"");d.dataset.k=k;
+    const t=document.createElement("div");t.textContent=BREEDS[k];d.append(thumb(k,DD.defaultStyle(k),"front",96),t);
+    d.onclick=()=>{if(selBreed!==k){selBreed=k;selStyle=DD.defaultStyle(k);}buildBreeds();buildStyles();};$("breeds").append(d);}}
+function buildStyles(){const box=$("styles");box.innerHTML="";
+  DD.BREEDS[selBreed].styles.forEach(sid=>{const d=document.createElement("div");d.className="style"+(sid===selStyle?" sel":"");d.dataset.s=sid;
+    const t=document.createElement("div");t.textContent=STYLE_NAME(sid);d.append(thumb(selBreed,sid,"front",84),t);
+    d.onclick=()=>{selStyle=sid;buildStyles();};box.append(d);});
+  $("styleDesc").textContent=`${BREEDS[selBreed]} · ${STYLE_NAME(selStyle)} — ${DD.STYLES[selStyle].desc}`;}
+const pv=$("preview"),pg=pv.getContext("2d");
+function drawPreview(t){if($("start").classList.contains("hidden")){requestAnimationFrame(drawPreview);return;}
+  const f=Math.floor(t/(STEP_MS*2/DaonDog.FRAMES))%DaonDog.FRAMES,W=pv.width,H=pv.height,S=DaonDog.SS,u=1.25;pg.clearRect(0,0,W,H);
+  [["front",0],["side",1],["back",2]].forEach(([v,i])=>{const sp=DaonDog.render(selBreed,selStyle,v,f),cx=W*(i+.5)/3;
+    pg.fillStyle="rgba(60,40,20,.15)";pg.beginPath();pg.ellipse(cx,H-14,34,8,0,0,7);pg.fill();
+    pg.drawImage(sp,cx-sp.width/S*u/2,H-14-DaonDog.GY*u+2,sp.width/S*u,sp.height/S*u);});
+  requestAnimationFrame(drawPreview);}
+buildBreeds();buildStyles();requestAnimationFrame(drawPreview);
 if(save){$("nick").value=save.nick;$("startBtn").textContent=`${save.nick}(으)로 이어하기!`;}
-$("startBtn").onclick=()=>{const n=$("nick").value.replace(/[<>]/g,"").trim().slice(0,10)||BREEDS[selBreed];P.breed=selBreed;P.nick=n;
+$("startBtn").onclick=()=>{const n=$("nick").value.replace(/[<>]/g,"").trim().slice(0,10)||BREEDS[selBreed];P.breed=selBreed;P.style=selStyle;P.nick=n;
   const S=SCN[save?.scene]||OUT;const sx=save&&walk(S,save.tx,save.ty)&&!S.isDoor(save.tx,save.ty)?save.tx:S.spawn.x,sy=sx===S.spawn.x?S.spawn.y:save.ty;
   place(P,S,sx,sy,save?.dir||"down");persist();
   ["start"].forEach(i=>$(i).classList.add("hidden"));["hud","chatbar","chatlog","minimap"].concat(matchMedia("(pointer:coarse)").matches||innerWidth<700?["joy"]:[]).forEach(i=>$(i).classList.remove("hidden"));
   started=true;banner(S.name);Net.connect();};
 $("resetBtn").onclick=()=>{$("start").classList.remove("hidden");started=false;Net.close();};
-function persist(){localStorage.setItem("daonVillage3",JSON.stringify({breed:P.breed,nick:P.nick,scene:P.scene,tx:P.tx,ty:P.ty,dir:P.dir}));}
+function persist(){localStorage.setItem("daonVillage3",JSON.stringify({breed:P.breed,style:P.style,nick:P.nick,scene:P.scene,tx:P.tx,ty:P.ty,dir:P.dir}));}
 function banner(t){const b=$("banner");b.textContent="~ "+t+" ~";b.classList.add("show");clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove("show"),1800);}
 // ---------- 입력 ----------
 const KEYDIR={arrowup:"up",w:"up",arrowdown:"down",s:"down",arrowleft:"left",a:"left",arrowright:"right",d:"right"};
@@ -84,7 +100,7 @@ $("actBtn").onclick=()=>interact();
 function closeAll(){$("dialog").classList.add("hidden");$("board").classList.add("hidden");uiOpen=false;}
 function say(text,choices){uiOpen=true;$("dialog").classList.remove("hidden");$("dlgName").textContent=C.owner.name;$("dlgText").textContent=text;$("dlgText").style.whiteSpace="pre-line";
   const ch=$("dlgChoices");ch.innerHTML="";(choices||[]).forEach(([t,f])=>{const b=document.createElement("button");b.textContent=t;b.onclick=f;ch.append(b);});}
-function ownerMenu(text){say(text,[["👋 인사",()=>ownerMenu(`${P.nick}! 오늘도 털이 반짝반짝하네요 ✨ ${BREEDS[P.breed]} 친구는 언제나 환영이에요.`)],
+function ownerMenu(text){say(text,[["👋 인사",()=>ownerMenu(`${P.nick}! 오늘도 털이 반짝반짝하네요 ✨ ${STYLE_NAME(P.style)} ${BREEDS[P.breed]} 친구는 언제나 환영이에요.`)],
   ["✂️ 미용 메뉴 안내",()=>ownerMenu(C.menus.map(m=>`• ${m.name} — ${m.price}`).join("\n"))],
   ["📅 예약 방법",()=>ownerMenu(C.reservationHowTo)],["⏰ 영업시간",()=>ownerMenu(C.shop.hours)],["📌 게시판 보기",openBoard],["닫기",closeAll]]);}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -113,7 +129,7 @@ function update(dt){
   else{path=[];P.moving=false;if(turned)Net.move();}
 }
 function stepActor(a,dt){if(a.prog>=1){a.moving=false;return;}a.prog=Math.min(1,a.prog+dt/STEP_MS);
-  a.px=(a.fx+(a.tx-a.fx)*a.prog)*T+16;a.py=(a.fy+(a.ty-a.fy)*a.prog)*T+28;a.moving=true;a.walkT=(a.walkT||0)+dt;}
+  a.px=(a.fx+(a.tx-a.fx)*a.prog)*T+16;a.py=(a.fy+(a.ty-a.fy)*a.prog)*T+28;a.moving=true;a.walkT=(a.walkT||0)+dt;a.walkUntil=performance.now()+140;}
 function arrive(){const S=SCN[P.scene];
   if(S.isDoor(P.tx,P.ty)){const N=S===OUT?IN:OUT;place(P,N,N.spawn.x,N.spawn.y,N.spawn.dir);path=[];banner(N.name);Net.move();}
   persist();}
@@ -127,7 +143,7 @@ const Net={ws:null,id:null,online:false,
   connect(){if(location.protocol==="file:"){this.offline();return;}
     try{this.ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws");}catch{this.offline();return;}
     const w=this.ws;const to=setTimeout(()=>{if(w.readyState!==1){w.close();this.offline();}},4000);
-    w.onopen=()=>{clearTimeout(to);this.online=true;w.send(JSON.stringify({t:"hello",nick:P.nick,breed:P.breed,scene:P.scene,tx:P.tx,ty:P.ty,dir:P.dir}));sys("마을에 접속했어요. Enter로 채팅할 수 있어요.");};
+    w.onopen=()=>{clearTimeout(to);this.online=true;w.send(JSON.stringify({t:"hello",nick:P.nick,breed:P.breed,style:P.style,scene:P.scene,tx:P.tx,ty:P.ty,dir:P.dir}));sys("마을에 접속했어요. Enter로 채팅할 수 있어요.");};
     w.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch{return;}this.handle(m);};
     w.onclose=()=>{clearTimeout(to);if(this.online)sys("서버 연결이 끊겼어요. 혼자 모드로 계속해요.");this.offline();};},
   offline(){this.online=false;this.ws=null;others.clear();setOnline();},
@@ -144,7 +160,7 @@ const Net={ws:null,id:null,online:false,
     else if(m.t==="notice")sys(m.text);
     setOnline();}};
 function upsert(p,snap){let o=others.get(p.id);
-  if(!o||snap||o.scene!==p.scene||Math.abs(o.tx-p.tx)+Math.abs(o.ty-p.ty)>1){o=o||mkActor({});Object.assign(o,{id:p.id,nick:p.nick,breed:p.breed,dir:p.dir});place(o,SCN[p.scene]||OUT,p.tx,p.ty,p.dir);others.set(p.id,o);return;}
+  if(!o||snap||o.scene!==p.scene||Math.abs(o.tx-p.tx)+Math.abs(o.ty-p.ty)>1){o=o||mkActor({});Object.assign(o,{id:p.id,nick:p.nick,breed:p.breed,style:DD.validStyle(p.breed,p.style)?p.style:DD.defaultStyle(p.breed),dir:p.dir});place(o,SCN[p.scene]||OUT,p.tx,p.ty,p.dir);others.set(p.id,o);return;}
   o.dir=p.dir;if(o.tx!==p.tx||o.ty!==p.ty){o.fx=o.tx;o.fy=o.ty;o.tx=p.tx;o.ty=p.ty;o.prog=0;}}
 function setOnline(){$("online").textContent=Net.online?`🟢 접속 ${others.size+1}명`:"⚪ 혼자 모드";}
 function bubble(a,text){a.bubble=text;a.bubbleT=performance.now();}
@@ -160,6 +176,11 @@ function drawChar(prefix,a,h,t){const v=VIEW[a.dir],im=IMG[`${prefix}_${v}`];if(
   g.save();g.translate(a.px,a.py-hop);g.scale((a.dir==="left"?-1:1)/sq,sq);
   if(a.moving)g.rotate((v==="side"?.05:.07)*Math.sin(ph)); // 걸음마다 좌우로 흔들기(2프레임 느낌)
   g.drawImage(im,-w/2,-h,w,h);g.restore();}
+function drawDog(a,t){const walking=a.moving||t<(a.walkUntil||0),v=VIEW[a.dir],S=DaonDog.SS,u=DOGH/58;
+  const f=walking?Math.floor((a.walkT||0)/(STEP_MS*2/DaonDog.FRAMES))%DaonDog.FRAMES:-1,sp=DaonDog.render(a.breed,a.style,v,f);
+  const w=sp.width/S*u,h=sp.height/S*u,breathe=walking?0:Math.sin(t/650+(a.id||0))*.012;
+  shadow(a.px,a.py+1,w*.27);
+  g.save();g.translate(a.px,a.py);g.scale((a.dir==="left"?-1:1)*(1-breathe),1+breathe);g.drawImage(sp,-w/2,-DaonDog.GY*u,w,h);g.restore();}
 function label(x,y,txt,bg="#fffaf0",fg="#a0526a",size=15){
   g.font=`${size}px Jua, sans-serif`;const w=g.measureText(txt).width+18;
   g.fillStyle="rgba(90,60,30,.18)";g.beginPath();g.roundRect(x-w/2,y-10,w,24,12);g.fill();
@@ -178,7 +199,7 @@ function render(t){const S=SCN[P.scene];
   if(S===OUT){if(ok(IMG.village))g.drawImage(IMG.village,0,0,OUT.w,OUT.h);}else if(ok(IMG.interior))g.drawImage(IMG.interior,0,0,1024,768);
   if(tapMark&&t-tapMark.t<700){g.strokeStyle=`rgba(255,143,171,${1-(t-tapMark.t)/700})`;g.lineWidth=3;g.beginPath();g.roundRect(tapMark.x*T+2,tapMark.y*T+2,T-4,T-4,6);g.stroke();}
   const L=[],tops=[];
-  const addDog=(a,mine)=>{L.push({y:a.py,f:()=>{drawChar("dog_"+a.breed,a,DOGH,t);nameTag(a.px,a.py+12,a.nick,mine);}});tops.push([a,a.py-DOGH-6]);};
+  const addDog=(a,mine)=>{L.push({y:a.py,f:()=>{drawDog(a,t);nameTag(a.px,a.py+12,a.nick,mine);}});tops.push([a,a.py-DaonDog.heightOf(a.breed,a.style)*DOGH/58-8]);};
   for(const o of others.values())if(o.scene===P.scene)addDog(o,false);addDog(P,true);
   if(S===OUT){OUT.deco.forEach(d=>L.push({y:d.y,f:()=>{const im=IMG[d.k];if(!ok(im))return;const w=d.h*im.naturalWidth/im.naturalHeight;shadow(d.x,d.y-4,w*.4);g.drawImage(im,d.x-w/2,d.y-d.h,w,d.h);if(d.sign)label(d.x,d.y+16,"📌 게시판");}}));
     L.push({y:sp(0,900).y,f:()=>{if(ok(IMG.shop))g.drawImage(IMG.shop,SH.x,SH.y,1024*SH.s,1024*SH.s);label(sp(565,0).x,SH.y+60,"🐾 "+C.shop.name,"#fffaf0","#d16b86",17);label(848,sp(0,960).y+Math.sin(t/300)*3,"▼ 들어가기");}});}
