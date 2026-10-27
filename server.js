@@ -4,7 +4,7 @@ const http=require("http"),fs=require("fs"),path=require("path"),{WebSocketServe
 const PORT=+process.env.PORT||8765, ROOT=__dirname, MAX_CLIENTS=150;
 const DD=require("./dogdata.js"),BREEDS=Object.keys(DD.BREEDS),DIRS=["down","up","left","right"],SCENES=["out","in"];
 const TYPES={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css",".webp":"image/webp",".png":"image/png",".woff2":"font/woff2",".json":"application/json"};
-const PUBLIC=/^\/(index\.html|config\.js|dogdata\.js|dogs\.js|game\.js|style\.css|assets\/[\w.-]+)$/; // 공개 파일만
+const PUBLIC=/^\/(index\.html|config\.js|dogdata\.js|pix\.js|art\.js|dogs\.js|game\.js|style\.css|assets\/[\w.-]+)$/; // 공개 파일만
 const server=http.createServer((req,res)=>{let u=decodeURIComponent(req.url.split("?")[0]);if(u==="/")u="/index.html";
   if(!PUBLIC.test(u)){res.writeHead(404);return res.end("not found");}
   fs.readFile(path.join(ROOT,u),(e,d)=>{if(e){res.writeHead(404);return res.end();}res.writeHead(200,{"Content-Type":TYPES[path.extname(u)]||"application/octet-stream","Cache-Control":"no-cache"});res.end(d);});});
