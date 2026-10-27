@@ -1,0 +1,25 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>다온펫살롱 마을</title><link rel="stylesheet" href="style.css"></head><body>
+<canvas id="game"></canvas>
+<div id="hud" class="hidden"><span id="sceneName"></span><span id="online"></span><button id="resetBtn" title="캐릭터 다시 고르기">🐶 변경</button></div>
+<canvas id="minimap" class="hidden" width="150" height="112"></canvas>
+<div id="banner"></div>
+<div id="joy" class="hidden"><div id="knob"></div></div>
+<button id="actBtn" class="hidden">말걸기</button>
+<div id="chatlog" class="hidden"></div>
+<form id="chatbar" class="hidden" autocomplete="off"><input id="chatIn" maxlength="80" placeholder="Enter로 채팅…"><button>전송</button></form>
+<div id="start" class="overlay"><div class="card">
+  <h1>🐾 다온펫살롱 마을</h1><p class="sub">우리 강아지로 놀러 오세요!</p>
+  <div id="breeds"></div>
+  <input id="nick" maxlength="10" placeholder="닉네임 (예: 콩이)">
+  <button id="startBtn" class="primary">마을로 출발!</button>
+  <p class="tiny">개인정보는 저장하지 않아요. 닉네임과 위치만 함께 접속한 사람에게 보여요.</p>
+</div></div>
+<div id="dialog" class="hidden"><div class="name" id="dlgName"></div><div id="dlgText"></div><div id="dlgChoices"></div></div>
+<div id="board" class="overlay hidden"><div class="card board">
+  <h2>📌 다온펫살롱 게시판</h2><h3>공지</h3><ul id="notices"></ul>
+  <h3>예약 가능 시간</h3><div id="slots"></div>
+  <a id="contact" class="primary btn" href="#" target="_blank" rel="noopener">예약 문의하기</a>
+  <button id="closeBoard">닫기</button></div></div>
+<script src="config.js"></script><script src="game.js"></script></body></html>

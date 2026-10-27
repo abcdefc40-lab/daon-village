@@ -1,0 +1,61 @@
+@font-face{font-family:Jua;src:url(assets/jua.woff2) format("woff2");font-display:swap}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#cdeac0;font-family:Jua,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;touch-action:none}
+canvas{display:block;width:100vw;height:100vh}
+.hidden{display:none!important}
+.overlay{position:fixed;inset:0;background:rgba(255,240,245,.75);display:flex;align-items:center;justify-content:center;z-index:10}
+.card{background:#fffaf0;border:4px solid #f4b6c2;border-radius:24px;padding:20px;width:min(92vw,560px);max-height:92vh;overflow:auto;text-align:center;box-shadow:0 8px 0 #e7a0b0}
+h1{margin:4px 0;color:#d16b86;font-size:26px}.sub{margin:0 0 12px;color:#8a6d5a}
+#breeds{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;margin-bottom:12px}
+.breed{background:#fff;border:3px solid #eee;border-radius:14px;padding:4px 2px;cursor:pointer;font-size:12px;word-break:keep-all;color:#6b5040}
+.breed.sel{border-color:#ff8fab;background:#fff0f4}.breed canvas{width:64px;height:64px}
+#nick{width:100%;padding:12px;font-size:16px;border:3px solid #f4d6a0;border-radius:12px;margin-bottom:10px;text-align:center}
+button,.btn{font:inherit;border:none;border-radius:14px;padding:10px 16px;background:#fde2b8;color:#6b4a2f;cursor:pointer;font-weight:bold;display:inline-block;text-decoration:none}
+.primary{background:#ff8fab;color:#fff;font-size:17px;padding:12px 24px}
+#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+#sceneName{background:#fffaf0cc;border:3px solid #f4b6c2;border-radius:20px;padding:6px 14px;color:#a0526a;font-weight:bold}
+#dialog{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;width:min(94vw,640px);background:#fffaf0;border:4px solid #c9a27a;border-radius:22px;padding:16px 18px;z-index:8;color:#5a4030;font-size:16px;line-height:1.5}
+#dialog .name{position:absolute;top:-18px;left:20px;background:#ff8fab;color:#fff;border-radius:12px;padding:2px 12px;font-weight:bold}
+#dlgChoices{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#joy{position:fixed;left:24px;bottom:24px;width:120px;height:120px;border-radius:50%;background:#ffffff66;border:3px solid #ffffffaa;z-index:6}
+#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:#ff8fabcc}
+#actBtn{position:fixed;right:24px;bottom:40px;width:90px;height:90px;border-radius:50%;background:#ff8fab;color:#fff;font-size:17px;z-index:6;box-shadow:0 5px 0 #d16b86}
+.board{text-align:left;background:#f7e3c3;border-color:#a9774d;box-shadow:0 8px 0 #8a5a35}
+.board h2{text-align:center;color:#7a4b2a;margin:4px 0}.board h3{margin:10px 0 4px;color:#a0526a}
+.board ul{margin:0;padding-left:18px}.slot{background:#fffaf0;border-radius:10px;padding:6px 10px;margin:4px 0}
+.slot span{display:inline-block;background:#cdeac0;border-radius:8px;padding:1px 8px;margin:2px}
+.board .btn,.board button{margin-top:12px;margin-right:6px}
+
+body{background:#8fc77a}
+button,input,.btn{font-family:Jua,sans-serif;font-weight:normal}
+.overlay{background:radial-gradient(circle,rgba(255,244,230,.55),rgba(255,214,224,.8))}
+.card{background:linear-gradient(#fffaf0,#fff3e2);border:5px solid #e9b9a0;box-shadow:0 8px 0 #c98f74,0 18px 40px rgba(120,70,40,.25)}
+h1{font-weight:normal;font-size:30px}
+.breed{transition:transform .15s}.breed:hover{transform:translateY(-3px)}.breed img{width:72px;height:72px;object-fit:contain}
+.breed.sel{transform:scale(1.06);box-shadow:0 4px 0 #ff8fab}
+button,.btn{box-shadow:0 4px 0 #d9b28a;transition:transform .1s}button:active,.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #d9b28a}
+.primary{box-shadow:0 5px 0 #d16b86}
+#dialog{background:linear-gradient(#fffaf0,#fdf0dc);border:6px solid #b98557;outline:3px solid #f5deb8;outline-offset:-10px;border-radius:30px;font-size:18px;box-shadow:0 8px 0 #8a5a35,0 20px 40px rgba(60,30,10,.3);padding:22px 24px}
+#dialog .name{font-size:18px;padding:4px 16px;box-shadow:0 3px 0 #d16b86}
+#dlgChoices button{background:#fff;border:2px solid #f0cfa8}
+.board{background:#e9c28f url() ;background:repeating-linear-gradient(45deg,#e7bf8c 0 6px,#e2b880 6px 12px);border:8px solid #9b6b43;box-shadow:0 8px 0 #6b4429,0 20px 40px rgba(60,30,10,.3)}
+.board h2,.board h3{font-weight:normal}
+#notices li,.slot{background:#fffaf0;border-radius:10px;padding:6px 10px;margin:5px 0;list-style:none;box-shadow:2px 3px 0 rgba(0,0,0,.12);transform:rotate(-.6deg)}
+.slot:nth-child(2n){background:#e9f7df;transform:rotate(.6deg)}.board ul{padding:0}
+#sceneName{font-size:17px;box-shadow:0 3px 0 #e9b9a0}
+#actBtn{font-size:20px}
+/* v3 */
+.tiny{font-size:12px;color:#a08670;margin:10px 0 0}
+#hud{gap:8px}#online{margin-left:auto;margin-right:8px;background:#fffaf0cc;border:3px solid #cdeac0;border-radius:20px;padding:5px 12px;color:#4e8a45;font-size:15px}
+#minimap{position:fixed;top:60px;right:10px;width:150px;height:112px;border:4px solid #b98557;border-radius:12px;background:#fffaf0;z-index:5;box-shadow:0 4px 0 #8a5a35}
+#banner{position:fixed;top:22%;left:50%;transform:translateX(-50%);z-index:7;font-size:34px;color:#fff;text-shadow:0 3px 0 #b98557,0 0 18px rgba(120,70,40,.6);opacity:0;transition:opacity .6s;pointer-events:none;white-space:nowrap}
+#banner.show{opacity:1}
+#chatbar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:6px;padding:8px;background:linear-gradient(#c58b5acc,#9b6b43ee);z-index:9}
+#chatIn{flex:1;font:inherit;font-size:16px;border:3px solid #f5deb8;border-radius:14px;padding:8px 12px;background:#fffaf0}
+#chatbar button{padding:8px 14px}
+#chatlog{position:fixed;left:8px;bottom:62px;width:min(70vw,380px);max-height:132px;overflow:hidden;z-index:6;font-size:14px;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end}
+#chatlog div{background:rgba(60,35,15,.45);color:#fff;border-radius:8px;padding:2px 8px;margin-top:2px;width:fit-content;max-width:100%;word-break:break-all}
+#chatlog b{color:#ffd166;font-weight:normal}#chatlog .sys{color:#cdeac0}
+#joy{bottom:200px}#actBtn{bottom:90px}
+@media (max-width:600px){#minimap{width:96px;height:72px;top:56px}#joy{left:14px;bottom:205px;width:110px;height:110px}#knob{left:30px;top:30px}#actBtn{right:14px;bottom:215px;width:80px;height:80px}#banner{font-size:26px}#chatlog{bottom:58px}}
+#dialog{bottom:68px;}@media (max-width:600px){#dialog{font-size:16px;padding:18px 16px}}
