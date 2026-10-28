@@ -3,3 +3,6 @@ shots/
 .env
 *.log
 guestbook.json*
+data.json
+data.json.tmp
+guestbook.json

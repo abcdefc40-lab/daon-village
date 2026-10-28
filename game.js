@@ -94,7 +94,8 @@ function persist() { localStorage.setItem(SAVE_KEY, JSON.stringify({ v: VER, bre
 function banner(t) { const b = $("banner"); b.textContent = "♡ " + t + " ♡"; b.classList.add("show"); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove("show"), 1800); }
 // ---------- 입력 ----------
 const KEYDIR = { arrowup: "up", w: "up", arrowdown: "down", s: "down", arrowleft: "left", a: "left", arrowright: "right", d: "right" };
-addEventListener("keydown", e => { if (e.target !== $("chatIn") && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return; if (typing) { if (e.key === "Escape") $("chatIn").blur(); return; }
+addEventListener("keydown", e => { if (e.key === "Escape" && anyOpen()) { e.preventDefault(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); closeAll(); return; }
+  if (e.target !== $("chatIn") && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return; if (typing) { if (e.key === "Escape") $("chatIn").blur(); return; }
   const k = e.key.toLowerCase();
   if (k === "enter" && started && !uiOpen) { e.preventDefault(); $("chatIn").focus(); return; }
   keys[k] = 1; if (KEYDIR[k]) { path = []; e.preventDefault(); }
@@ -107,7 +108,7 @@ const view = { scale: 3, d: 1, ox: 0, oy: 0, cx: 0, cy: 0, vw: 0, vh: 0 };
 const toWorld = (clientX, clientY) => [((clientX * view.d) - view.ox) / view.scale, ((clientY * view.d) - view.oy) / view.scale];
 const toScreen = (wx, wy) => [(wx * view.scale + view.ox) / view.d, (wy * view.scale + view.oy) / view.d];
 let tapMark = null;
-cv.addEventListener("pointerdown", e => { if (!started || uiOpen) return; $("chatIn").blur();
+cv.addEventListener("pointerdown", e => { if (started && anyOpen()) { if (!$("dialog").classList.contains("hidden") && $("dlgChoices").dataset.lock) return; closeAll(); return; } if (!started || uiOpen) return; $("chatIn").blur();
   const [wx, wy] = toWorld(e.clientX, e.clientY), S = SCN[P.scene];
   if (near && Math.hypot(wx - near.x, wy - near.y) < 30) { interact(); return; }
   const tx = Math.floor(wx / T), ty = Math.floor(wy / T); path = findPath(S, P.tx, P.ty, tx, ty); tapMark = { x: tx, y: ty, t: performance.now() }; });
@@ -125,12 +126,19 @@ function jm(e) { const r = jb.getBoundingClientRect(), R = r.width / 2; let dx =
   kn.style.transform = `translate(${dx}px,${dy}px)`; path = []; joyDir = m < 12 ? null : Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"); }
 $("actBtn").onclick = () => interact();
 // ---------- 대화 / 게시판 ----------
-function closeAll() { $("dialog").classList.add("hidden"); $("board").classList.add("hidden"); uiOpen = false; X.closeAll && X.closeAll(); }
-function say(text, choices, who) { uiOpen = true; $("dialog").classList.remove("hidden"); $("dlgName").textContent = who || C.owner.name; $("dlgText").textContent = text; $("dlgText").style.whiteSpace = "pre-line";
+const PANELS = ["dialog", "board", "room", "gb", "emoMenu"];
+const anyOpen = () => uiOpen || PANELS.some(i => $(i) && !$(i).classList.contains("hidden"));
+// 바깥(어두운 배경)을 누르면 닫기 — 터치/마우스 모두 pointerdown 기준
+["board", "room", "gb"].forEach(i => $(i).addEventListener("pointerdown", e => { if (e.target === $(i)) { e.preventDefault(); closeAll(); } }));
+document.querySelectorAll(".xbtn").forEach(b => b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); closeAll(); }));
+function closeAll() { $("dialog").classList.add("hidden"); $("dlgForm").classList.add("hidden"); $("board").classList.add("hidden"); uiOpen = false; X.closeExtra && X.closeExtra(); $("chatIn").blur(); }
+function say(text, choices, who) { uiOpen = true; $("dlgForm").classList.add("hidden"); delete $("dlgChoices").dataset.lock; $("dialog").classList.remove("hidden"); $("dlgName").textContent = who || C.owner.name; $("dlgText").textContent = text; $("dlgText").style.whiteSpace = "pre-line";
   const ch = $("dlgChoices"); ch.innerHTML = ""; (choices || []).forEach(([t, f]) => { const b = document.createElement("button"); b.textContent = t; b.onclick = f; ch.append(b); }); }
-function ownerMenu(text) { say(text, [["👋 인사", () => ownerMenu(`${P.nick}! 오늘도 털이 반짝반짝하네요 ✨ ${STYLE_NAME(P.style)} ${BREEDS[P.breed]} 친구는 언제나 환영이에요.`)],
-  ["✂️ 미용 메뉴 안내", () => ownerMenu(C.menus.map(m => `• ${m.name} — ${m.price}`).join("\n"))],
-  ["📅 예약 방법", () => ownerMenu(C.reservationHowTo)], ["⏰ 영업시간", () => ownerMenu(C.shop.hours)], ["📌 게시판 보기", openBoard], ["🎁 심부름(퀘스트)", () => X.questMenu()], ["📖 방명록", () => X.openGB()], ["닫기", closeAll]]); }
+function ownerMenu(text) { const H = { menu: () => ownerMenu(C.menus.map(m => `• ${m.name} — ${m.price}`).join("\n") || "메뉴 준비 중이에요."), hours: () => ownerMenu(C.shop.hours || "영업시간 준비 중이에요."), howto: () => ownerMenu(C.reservationHowTo || ""),
+    board: openBoard, quest: () => X.questMenu(), gb: () => X.openGB() };
+  const list = (C.dialogue && C.dialogue.choices) || [];
+  const ch = list.map(c => [c.label, () => c.kind === "flow" ? X.runFlow(c.flow) : c.kind === "reply" ? ownerMenu(c.reply.replace(/\{nick\}/g, P.nick)) : (H[c.kind] || closeAll)()]);
+  say(text, ch.concat([["닫기", closeAll]])); }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function openBoard() { closeAll(); uiOpen = true; $("board").classList.remove("hidden");
   $("notices").innerHTML = C.board.notices.map(n => `<li><b>${esc(n.date)}</b> ${esc(n.text)}</li>`).join("");

@@ -20,3 +20,11 @@
 - 방명록 API: `GET/POST /api/guestbook`, `DELETE /api/guestbook/:id` (헤더 `X-Admin-Key` = 환경변수 `ADMIN_KEY`; 없으면 삭제 꺼짐). 글자수(방명록 200·일촌평 40), IP당 20초·시간당 10개 제한, 간단 욕설 필터(♡로 치환), 서버에서 HTML 이스케이프.
 - 저장 파일 `guestbook.json`(git 제외). **Render 무료 플랜 디스크는 임시라 재배포/재시작 때 방명록이 지워져요.** 오래 보관하려면 영구 디스크나 외부 DB가 필요해요.
 - 예약 문의 링크는 `config.js` 의 `board.contactLink` (지금은 `#` 자리표시자 → 누르면 안내 대화창). 공지에 '(예시)'가 있으면 '자리표시자' 표시.
+
+## v7: 관리자 페이지 · 손님 문의 · 알림 · 영구 저장
+- `/admin` : ADMIN_KEY 로 들어가는 원장님 관리실. 문의 기록(새 문의/처리됨, 메모), 가게 정보·메뉴·가격·영업시간, 게시판 공지·예약 가능 시간, 외부 예약 링크, 원장님 대화 선택지와 문의 흐름(질문·선택지), 방명록 삭제.
+- 게임은 `/api/content` 의 내용을 읽어요. `config.js` 는 처음 기본값.
+- 손님이 원장님 문의 흐름을 끝내면 문의 기록에 저장되고 `NOTIFY_WEBHOOK_URL` 로 JSON 알림을 보내요.
+- 저장소: `GITHUB_DATA_TOKEN` + `GITHUB_DATA_REPO` 가 있으면 비공개 GitHub 저장소의 `data.json`, 없으면 로컬 `data.json`.
+
+환경변수: `ADMIN_KEY`, `NOTIFY_WEBHOOK_URL`, `NOTIFY_WEBHOOK_AUTH`(선택, Authorization 헤더 전체 값), `GITHUB_DATA_TOKEN`, `GITHUB_DATA_REPO`(예: abcdefc40-lab/daon-village-data), `GITHUB_DATA_BRANCH`(선택, 기본 main).

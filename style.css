@@ -85,3 +85,13 @@ button:active,.btn:active{transform:translateY(3px);box-shadow:none}
 .ph{display:inline-block;background:#ffe066;color:#7a5a20;font-size:11px;padding:0 6px;margin-right:6px}
 @media (max-width:600px){#tools{top:136px;right:8px;gap:4px}#tools button{min-width:42px;min-height:38px;padding:3px 6px;font-size:16px}#tools button span{display:none}
  #emoMenu{right:62px;top:136px;width:180px}#friendBtn{right:14px;bottom:305px;width:70px;height:70px;font-size:15px}#palette{grid-template-columns:repeat(4,1fr)}#followChip{top:52px;font-size:13px}}
+
+/* ===== v7 닫기 버튼 · 문의 입력 ===== */
+.xbtn{position:absolute;top:-2px;right:-2px;z-index:3;width:38px;height:38px;padding:0;font-size:18px;line-height:1;border-color:#ff86b8;background:linear-gradient(#fff,#ffe3f0);color:#d9447f;box-shadow:0 3px 0 #ff86b8;touch-action:manipulation}
+.titlebar .xbtn{position:static;width:30px;height:26px;font-size:15px;margin:-2px -6px -2px 6px;box-shadow:0 2px 0 #c45a8a}
+.card{position:relative}.board>.xbtn{top:2px;right:2px}
+#dialog .xbtn{top:-30px;right:-4px;width:34px;height:30px}
+#emoMenu .xbtn{position:static;align-self:flex-end;width:30px;height:26px;font-size:14px;margin-bottom:2px}
+#dlgForm{display:flex;gap:6px;margin-top:10px}#dlgIn{flex:1;min-width:0;font:inherit;font-size:16px;border:3px solid #ff86b8;padding:7px 10px;color:#5a4a80;outline:none;background:#fff}
+#dlgChoices button,.xbtn,#tools button,#emoMenu button{touch-action:manipulation}
+#dlgChoices .skip{border-color:#c5ddf8;color:#7a8ac8}

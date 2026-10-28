@@ -32,22 +32,22 @@
 <button id="friendBtn" class="hidden">🐶<br>친구</button>
 <div id="followChip" class="hidden"><span></span><button>그만</button></div>
 <div id="room" class="overlay hidden"><div class="card roomcard">
-  <div class="titlebar"><span id="roomTitle">🏠 미니룸</span><span>♡ ♡ ♡</span></div>
+  <div class="titlebar"><span id="roomTitle">🏠 미니룸</span><button class="xbtn" aria-label="닫기" title="닫기 (ESC)">✕</button></div>
   <canvas id="roomCv"></canvas><p id="roomHint" class="tiny"></p>
   <div id="roomTools"><div id="palette"></div><button id="roomDel">🗑 치우기</button><button id="roomReset">↺ 처음 방</button></div>
   <div id="roomVisit"><div class="step">친구 미니룸 놀러가기</div><div id="visitList"></div></div>
   <button id="roomMine">내 방으로</button><button id="roomClose">닫기</button>
 </div></div>
 <div id="gb" class="overlay hidden"><div class="card gbcard">
-  <div class="titlebar"><span>📖 다온펫살롱 방명록</span><span>♡ ♡ ♡</span></div>
+  <div class="titlebar"><span>📖 다온펫살롱 방명록</span><button class="xbtn" aria-label="닫기" title="닫기 (ESC)">✕</button></div>
   <div class="tabs"><button class="gbtab sel" data-k="gb">방명록</button><button class="gbtab" data-k="ilchon">일촌평</button><button id="gbAdmin" class="hidden" title="관리자">🔑</button></div>
   <form id="gbForm" autocomplete="off"><input id="gbText" maxlength="200"><button class="primary sm">남기기</button></form>
   <p id="gbMsg" class="tiny"></p><div id="gbList"></div>
-  <p class="tiny">닉네임과 글만 저장돼요. 욕설은 ♡로 바뀌어요. 서버를 다시 올리면 기록이 지워질 수 있어요.</p>
+  <p class="tiny">닉네임과 글만 저장돼요. 욕설은 ♡로 바뀌어요. </p>
   <button id="gbClose">닫기</button>
 </div></div>
-<div id="dialog" class="hidden"><div class="name" id="dlgName"></div><div id="dlgText"></div><div id="dlgChoices"></div></div>
-<div id="board" class="overlay hidden"><div class="card board">
+<div id="dialog" class="hidden"><button class="xbtn" aria-label="닫기" title="닫기 (ESC)">✕</button><div class="name" id="dlgName"></div><div id="dlgText"></div><div id="dlgChoices"></div><form id="dlgForm" class="hidden" autocomplete="off"><input id="dlgIn" maxlength="300"><button class="primary sm">다음</button></form></div>
+<div id="board" class="overlay hidden"><div class="card board"><button class="xbtn" aria-label="닫기" title="닫기 (ESC)">✕</button>
   <h2>📌 다온펫살롱 게시판</h2><h3>공지</h3><ul id="notices"></ul>
   <h3>예약 가능 시간</h3><div id="slots"></div>
   <a id="contact" class="primary btn" href="#" target="_blank" rel="noopener">예약 문의하기</a>

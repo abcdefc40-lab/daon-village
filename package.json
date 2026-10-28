@@ -1,6 +1,6 @@
 {
   "name": "daon-village",
-  "version": "6.0.0",
+  "version": "7.0.0",
   "description": "다온펫살롱 마을",
   "main": "server.js",
   "scripts": {

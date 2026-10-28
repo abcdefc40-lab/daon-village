@@ -167,6 +167,7 @@ function openGB() { X.closeAll(); X.setUi(true); $("gb").classList.remove("hidde
 // ---------- 예약 문의 ----------
 const linkReady = () => { const l = (C.board.contactLink || "").trim(); return l && l !== "#" && /^https?:\/\//.test(l); };
 function reserve() { if (linkReady()) { window.open(C.board.contactLink, "_blank", "noopener"); return; }
+  const rf = (C.flows || []).find(f => f.id === "reserve") || (C.flows || [])[0]; if (rf) { runFlow(rf.id); return; }
   X.say(`📅 예약 문의 링크는 아직 준비 중이에요. (자리표시자)\n${C.reservationHowTo}\n인스타그램: ${C.shop.instagram}`, [["📌 게시판 보기", () => { X.closeAll(); window.__daon.openBoard(); }], ["닫기", X.closeAll]], "📅 예약 문의"); }
 X.boardExtra = () => { document.querySelectorAll("#notices li").forEach((li, i) => { const n = C.board.notices[i]; if (n && (n.placeholder || /예시/.test(n.date + n.text))) { const s = document.createElement("span"); s.className = "ph"; s.textContent = "자리표시자"; li.prepend(s); } });
   const c = $("contact"); c.onclick = e => { if (!linkReady()) { e.preventDefault(); reserve(); } }; c.textContent = linkReady() ? "📅 예약 문의하기" : "📅 예약 문의하기 (링크 준비 중)"; };
@@ -175,8 +176,10 @@ function hideEmoMenu() { $("emoMenu").classList.add("hidden"); }
 function updTools() { const tb = $("treatBtn"); if (tb) tb.querySelector("b").textContent = S6.treats; const fc = $("followChip"); if (fc) { const l = follow && others.get(follow); fc.classList.toggle("hidden", !follow); if (l) fc.querySelector("span").textContent = `🐾 ${l.nick} 님과 산책 중`; } }
 function wire() {
   $("emoBtn").onclick = () => $("emoMenu").classList.toggle("hidden");
-  $("emoMenu").innerHTML = EMO.map(([k, ic, n, h]) => `<button data-k="${k}">${ic} ${n} <kbd>${h}</kbd></button>`).join("") + `<p class="tiny">G 인사 · F 같이 걷기 · B 공 · T 간식 · R 미니룸 · Q 심부름</p>`;
-  $("emoMenu").querySelectorAll("button").forEach(b => b.onclick = () => emote(b.dataset.k));
+  $("emoMenu").innerHTML = `<button class="xbtn" aria-label="닫기">✕</button>` + EMO.map(([k, ic, n, h]) => `<button data-k="${k}">${ic} ${n} <kbd>${h}</kbd></button>`).join("") + `<p class="tiny">G 인사 · F 같이 걷기 · B 공 · T 간식 · R 미니룸 · Q 심부름</p>`;
+  $("emoMenu").querySelectorAll("button[data-k]").forEach(b => b.onclick = () => emote(b.dataset.k));
+  $("emoMenu").querySelector(".xbtn").onclick = e => { e.stopPropagation(); hideEmoMenu(); };
+  document.addEventListener("pointerdown", e => { const m = $("emoMenu"); if (!m.classList.contains("hidden") && !m.contains(e.target) && !$("emoBtn").contains(e.target)) hideEmoMenu(); }, true);
   $("ballBtn").onclick = throwBall; $("treatBtn").onclick = eatTreat; $("questBtn").onclick = () => { X.closeAll(); questMenu(); }; $("roomBtn").onclick = () => openRoom();
   $("gbBtn").onclick = openGB; $("resvBtn").onclick = () => { X.closeAll(); reserve(); }; $("friendBtn").onclick = () => friendMenu();
   $("followChip").querySelector("button").onclick = stopFollow;
@@ -190,8 +193,32 @@ function wire() {
   updTools(); }
 wire();
 setInterval(() => { if (!$("room").classList.contains("hidden")) drawRoom(); }, 450);
-X.closeAll = () => { ["room", "gb"].forEach(i => $(i).classList.add("hidden")); hideEmoMenu(); roomView = null; };
-X.questMenu = questMenu; X.openGB = openGB;
+X.closeExtra = () => { ["room", "gb"].forEach(i => $(i).classList.add("hidden")); hideEmoMenu(); roomView = null; delete $("dlgChoices").dataset.lock; };
+X.questMenu = questMenu; X.openGB = openGB; X.runFlow = runFlow;
+// ---------- v7: 원장님 문의 흐름 (관리자가 /admin 에서 질문·선택지를 고쳐요) ----------
+function runFlow(id) { const f = (C.flows || []).find(x => x.id === id); if (!f) { X.say("지금은 이 문의를 받을 수 없어요.", [["닫기", X.closeAll]]); return; }
+  const ans = {}; let i = 0; const lock = () => { $("dlgChoices").dataset.lock = "1"; };
+  const cancel = ["그만두기", () => X.closeAll()];
+  const step = () => { if (i >= f.questions.length) return review(); const q = f.questions[i], n = `(${i + 1}/${f.questions.length}) `;
+    const next = v => { ans[q.key] = v; i++; step(); }, back = i > 0 ? [["◀ 이전", () => { i--; step(); }]] : [];
+    if (q.type === "choice") { X.say((i === 0 ? f.intro + "\n\n" : "") + n + q.q, q.options.map(o => [o, () => next(o)]).concat(q.optional ? [["건너뛰기", () => next("")]] : [], back, [cancel]), "📅 " + f.label); lock(); }
+    else { X.say((i === 0 ? f.intro + "\n\n" : "") + n + q.q + (q.optional ? " (선택)" : ""), (q.optional ? [["건너뛰기", () => next("")]] : []).concat(back, [cancel]), "📅 " + f.label); lock();
+      const fm = $("dlgForm"), inp = $("dlgIn"); fm.classList.remove("hidden"); inp.value = ans[q.key] || ""; inp.placeholder = q.optional ? "적지 않아도 돼요" : "여기에 적어 주세요";
+      fm.onsubmit = e => { e.preventDefault(); const v = inp.value.trim().slice(0, 300); if (!v && !q.optional) { inp.placeholder = "한 글자 이상 적어 주세요"; return; } inp.blur(); next(v); };
+      if (!matchMedia("(pointer:coarse)").matches) setTimeout(() => inp.focus(), 30); } };
+  const review = () => { const dog = `${window.DAON_DOGDATA.BREEDS[P.breed]?.name || ""} · ${window.DAON_DOGDATA.STYLES[P.style]?.name || ""}`;
+    const lines = f.questions.map(q => `• ${q.q.replace(/[?？].*$/, "?")} ${ans[q.key] || "—"}`).join("\n");
+    X.say(`이렇게 보낼까요?\n🐶 ${P.nick} (${dog})\n${lines}`, [["💌 보내기", send], ["◀ 고치기", () => { i = f.questions.length - 1; step(); }], cancel], "📅 " + f.label); lock(); };
+  const send = async () => { X.say("보내는 중이에요…", [], "📅 " + f.label); lock();
+    try { const r = await fetch("api/inquiry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ flow: f.id, answers: ans, nick: P.nick, breed: P.breed, style: P.style }) }), j = await r.json();
+      if (!r.ok || j.error) { X.say("앗, 보내지 못했어요. " + (j.error || ""), [["다시 보내기", send], ["닫기", X.closeAll]], "📅 " + f.label); return; }
+      setEm(P, "heart"); if (Net.online) Net.send({ t: "emote", k: "heart" }); X.banner("문의 완료!");
+      X.say(`✅ ${j.done || f.done || "접수됐어요!"}\n접수 번호: ${j.id.slice(0, 6)}`, [["처음으로", () => X.ownerMenu(C.owner.greeting)], ["닫기", X.closeAll]], "📅 " + f.label); }
+    catch { X.say("서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.", [["다시 보내기", send], ["닫기", X.closeAll]], "📅 " + f.label); } };
+  step(); }
+// 서버에 저장된 최신 콘텐츠 불러오기 (실패하면 config.js 기본값 그대로)
+async function loadContent() { if (location.protocol === "file:") return; try { const r = await fetch("api/content", { cache: "no-store" }); if (r.ok) { const j = await r.json(); if (j && j.shop) Object.assign(C, j); } } catch {} }
+loadContent();
 X.start = () => { $("tools").classList.remove("hidden"); updTools(); };
 // ---------- 키 ----------
 X.key = (k, e) => { if (e.repeat) return false; const m = { "1": "sit", "2": "wag", "3": "heart", "4": "bark" }[k];
@@ -218,6 +245,7 @@ X.net = m => { const me = Net.id;
   else if (m.t === "pair") { if (m.leader) { pairs.set(m.follower, m.leader); if (m.follower === me) { follow = m.leader; X.sys(`${m.ln} 님과 같이 걸어요! (그만하려면 '그만')`); } if (m.leader === me) X.sys(`${m.fn} 님이 나를 따라 걸어요 🐾`); setEm(actorById(m.follower), "heart"); }
     else { pairs.delete(m.follower); if (m.follower === me) { follow = 0; X.sys("산책을 마쳤어요."); } } updTools(); }
   else if (m.t === "room") { if (m.id === me) return; openRoom({ nick: m.nick, items: m.items || [], breed: m.breed, style: m.style }); }
+  else if (m.t === "content") loadContent();
   else if (m.t === "gb") { if (!$("gb").classList.contains("hidden")) loadGB(); } };
 // ---------- 그리기 ----------
 const sc = () => X.view.scale / X.view.d;
@@ -244,5 +272,5 @@ X.overlay = (tops, t) => { tops.forEach(([a]) => { const em = a.em && t - a.emT 
     else if (em === "greet") { drawIcon(ICON.paw, sx, sy - 4 - Math.abs(Math.sin(age / 200)) * 6, 1); }
     else if (em === "eat") drawIcon(ICON.spark, sx + 10 * sc(), sy + 8, .7); });
   if (nearDog && !X.isUi()) { const [x, y] = X.toScreen(nearDog.px, nearDog.py + 22); X.pill(x, y, "G 인사 · F 같이 걷기", "#e9f6ff", "#3a6aa8", "#8ec5ff", 12); } };
-window.__daonX = { S6, balls, pairs, emote, throwBall, greet, askFollow, stopFollow, questMenu, openRoom, openGB, eatTreat, reserve, BONE_AT, roomItems: () => roomItems, setAdmin: k => { adminKey = k; renderGB(); }, visitRoom, friendMenu, nearDog: () => nearDog };
+window.__daonX = { runFlow, loadContent, S6, balls, pairs, emote, throwBall, greet, askFollow, stopFollow, questMenu, openRoom, openGB, eatTreat, reserve, BONE_AT, roomItems: () => roomItems, setAdmin: k => { adminKey = k; renderGB(); }, visitRoom, friendMenu, nearDog: () => nearDog };
 })();
