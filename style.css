@@ -95,3 +95,6 @@ button:active,.btn:active{transform:translateY(3px);box-shadow:none}
 #dlgForm{display:flex;gap:6px;margin-top:10px}#dlgIn{flex:1;min-width:0;font:inherit;font-size:16px;border:3px solid #ff86b8;padding:7px 10px;color:#5a4a80;outline:none;background:#fff}
 #dlgChoices button,.xbtn,#tools button,#emoMenu button{touch-action:manipulation}
 #dlgChoices .skip{border-color:#c5ddf8;color:#7a8ac8}
+
+#zoomCtl{position:fixed;left:10px;top:58px;display:flex;flex-direction:row;gap:6px;z-index:6}#zoomCtl button{width:40px;height:40px;padding:0;font-size:22px;line-height:1;border-radius:10px;border:3px solid #74a9ec;background:#fff;color:#4d6fb8;box-shadow:0 3px 0 #ff9ccf;touch-action:manipulation}
+@media (max-width:600px){#zoomCtl{top:54px}}

@@ -87,7 +87,7 @@ $("startBtn").onclick = () => { if (!ready) return; const n = $("nick").value.re
   const keep = save && save.v === VER, S = keep ? (SCN[save.scene] || OUT) : OUT;
   const ok = keep && walk(S, save.tx, save.ty) && !S.isDoor(save.tx, save.ty), sx = ok ? save.tx : S.spawn.x, sy = ok ? save.ty : S.spawn.y;
   place(P, S, sx, sy, (ok && save.dir) || "down"); persist();
-  $("start").classList.add("hidden"); ["hud", "chatbar", "chatlog", "minimap"].concat(matchMedia("(pointer:coarse)").matches || innerWidth < 700 ? ["joy"] : []).forEach(i => $(i).classList.remove("hidden"));
+  $("start").classList.add("hidden"); ["hud", "chatbar", "chatlog", "minimap", "zoomCtl"].concat(matchMedia("(pointer:coarse)").matches || innerWidth < 700 ? ["joy"] : []).forEach(i => $(i).classList.remove("hidden"));
   started = true; banner(S.name); Net.connect(); X.start && X.start(); };
 $("resetBtn").onclick = () => { $("start").classList.remove("hidden"); started = false; Net.close(); path = []; };
 function persist() { localStorage.setItem(SAVE_KEY, JSON.stringify({ v: VER, breed: P.breed, style: P.style, nick: P.nick, scene: P.scene, tx: P.tx, ty: P.ty, dir: P.dir })); }
@@ -271,8 +271,20 @@ function drawMinimap() { const m = $("minimap"), c = m.getContext("2d"), S = SCN
   for (const o of others.values()) if (o.scene === P.scene) { c.fillStyle = "#4d8cf0"; c.fillRect(Math.round(o.px * sx) - 2, Math.round(o.py * sy) - 2, 4, 4); }
   if (S === IN) { c.fillStyle = "#ff6fa8"; c.fillRect(Math.round((IN.npc.tx * T + 8) * sx) - 2, Math.round((IN.npc.ty * T + 8) * sy) - 2, 4, 4); }
   c.fillStyle = "#fff2a0"; c.strokeStyle = "#b0488a"; c.lineWidth = 1.5; c.fillRect(Math.round(P.px * sx) - 3, Math.round(P.py * sy) - 3, 6, 6); c.strokeRect(Math.round(P.px * sx) - 3, Math.round(P.py * sy) - 3, 6, 6); }
-function resize() { const d = devicePixelRatio || 1; cv.width = Math.round(innerWidth * d); cv.height = Math.round(innerHeight * d); view.d = d;
-  const css = Math.max(2, Math.min(4, Math.floor(innerWidth / 400))); view.scale = Math.max(2, Math.round(css * d)); }
+// 카메라 줌: 기본값은 화면 크기에 맞춰(가로 ~18칸, 세로 ~16칸) 정하고, 사용자가 +/-·휠·핀치로 조절(localStorage 기억)
+const ZKEY = "daonZoom", ZMIN = 0.5, ZMAX = 3; let zoomF = Math.min(ZMAX, Math.max(ZMIN, +localStorage.getItem(ZKEY) || 1));
+function baseCss() { return Math.min(innerWidth / (18 * T), innerHeight / (16 * T)); }
+function calcScale(f) { const d = view.d; return Math.max(1, Math.min(Math.round(8 * d), Math.round(baseCss() * f * d))); } // 기기 픽셀 기준 정수 배율 → 도트 선명
+function resize() { const d = devicePixelRatio || 1; cv.width = Math.round(innerWidth * d); cv.height = Math.round(innerHeight * d); view.d = d; view.scale = calcScale(zoomF); }
+function setZoom(f) { f = Math.min(ZMAX, Math.max(ZMIN, f)); zoomF = f; try { localStorage.setItem(ZKEY, String(f)); } catch (e) {} view.scale = calcScale(f); }
+function zoomStep(dir) { const cur = view.scale; let f = zoomF; for (let i = 0; i < 12; i++) { f *= dir > 0 ? 1.15 : 1 / 1.15; if (f <= ZMIN || f >= ZMAX || calcScale(f) !== cur) break; } setZoom(f); }
+cv.addEventListener("wheel", e => { if (!started || anyOpen()) return; e.preventDefault(); zoomStep(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+let pinch = null; const tdist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+cv.addEventListener("touchstart", e => { if (e.touches.length === 2 && started && !anyOpen()) { pinch = { d: tdist(e.touches), f: zoomF }; path = []; tapMark = null; e.preventDefault(); } }, { passive: false });
+cv.addEventListener("touchmove", e => { if (pinch && e.touches.length === 2) { e.preventDefault(); setZoom(pinch.f * tdist(e.touches) / pinch.d); } }, { passive: false });
+cv.addEventListener("touchend", e => { if (e.touches.length < 2) pinch = null; });
+$("zoomIn").addEventListener("click", e => { e.stopPropagation(); zoomStep(1); });
+$("zoomOut").addEventListener("click", e => { e.stopPropagation(); zoomStep(-1); });
 addEventListener("resize", resize); resize();
 let lt = performance.now(), mm = 0;
 function loop(t) { const dt = Math.min(60, t - lt); lt = t; if (ready) update(dt), updateNear();
