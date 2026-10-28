@@ -1,4 +1,4 @@
-# 다온펫살롱 마을 (v5)
+# 다온펫살롱 마을 (v6)
 실행: `cd daon-village && npm install && node server.js` → http://localhost:8765
 - PORT=xxxx 로 포트 변경. 서버 없이 index.html만 열면 '혼자 모드'.
 - 내용 수정: config.js
@@ -14,3 +14,9 @@
 - 3/4 탑다운 시점이라 타일 이동·길찾기·멀티플레이는 그대로예요. 저장 키 `daonVillage3` 유지(`v:5` 이전 저장은 위치만 초기화).
 - 창틀(파스텔 하늘/분홍 도트 프레임)은 `game.js` 의 `frameURL` 이 만들어 `--f-*` CSS 변수로 쓰고, `style.css` 가 꾸며요.
 - `assets/` 에는 글꼴(`jua.woff2`)만 남았어요. v4 전체는 git 기록에 있어요.
+
+## v6 (상호작용)
+- `social.js`: 감정표현(1 앉아·2 꼬리·3 하트·4 멍멍), 인사(G)·공 던지기/물어오기(B)·같이 걷기(F, 상대 수락 필요), 원장님 심부름(Q, 보상 간식은 localStorage `daonV6`), 간식 먹기(T), 미니룸 꾸미기(R, localStorage 저장 + 접속 중인 친구 방 구경), 방명록·일촌평, 예약 문의 버튼. 모바일은 오른쪽 버튼 줄과 '친구' 버튼.
+- 방명록 API: `GET/POST /api/guestbook`, `DELETE /api/guestbook/:id` (헤더 `X-Admin-Key` = 환경변수 `ADMIN_KEY`; 없으면 삭제 꺼짐). 글자수(방명록 200·일촌평 40), IP당 20초·시간당 10개 제한, 간단 욕설 필터(♡로 치환), 서버에서 HTML 이스케이프.
+- 저장 파일 `guestbook.json`(git 제외). **Render 무료 플랜 디스크는 임시라 재배포/재시작 때 방명록이 지워져요.** 오래 보관하려면 영구 디스크나 외부 DB가 필요해요.
+- 예약 문의 링크는 `config.js` 의 `board.contactLink` (지금은 `#` 자리표시자 → 누르면 안내 대화창). 공지에 '(예시)'가 있으면 '자리표시자' 표시.

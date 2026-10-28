@@ -4,6 +4,7 @@ const C = window.DAON_CONFIG, DD = window.DAON_DOGDATA, Art = window.DaonArt, Pi
 const BREEDS = Object.fromEntries(Object.entries(DD.BREEDS).map(([k,v]) => [k, v.name])), STYLE_NAME = s => DD.STYLES[s]?.name || "";
 const T = 16, STEP_MS = 200, FR = DaonDog.FRAMES, SAVE_KEY = "daonVillage3", VER = 5; // 월드 좌표는 '도트' 단위, 한 칸 = 16도트
 const $ = id => document.getElementById(id);
+const X = window.DaonX = window.DaonX || {}; // v6 상호작용(social.js) 연결 고리
 // ---------- 창틀 (스테퍼 모서리 도트 프레임을 코드로 만들어 CSS에 넘김) ----------
 function frameURL(o, l, f) { const b = new Pix.Buf(9, 9), CORNER = [[null, null, o], [null, o, l], [o, l, f]];
   for (let y = 0; y < 9; y++) for (let x = 0; x < 9; x++) { const ex = x < 3 ? x : x > 5 ? 8 - x : 3, ey = y < 3 ? y : y > 5 ? 8 - y : 3; let c;
@@ -87,16 +88,17 @@ $("startBtn").onclick = () => { if (!ready) return; const n = $("nick").value.re
   const ok = keep && walk(S, save.tx, save.ty) && !S.isDoor(save.tx, save.ty), sx = ok ? save.tx : S.spawn.x, sy = ok ? save.ty : S.spawn.y;
   place(P, S, sx, sy, (ok && save.dir) || "down"); persist();
   $("start").classList.add("hidden"); ["hud", "chatbar", "chatlog", "minimap"].concat(matchMedia("(pointer:coarse)").matches || innerWidth < 700 ? ["joy"] : []).forEach(i => $(i).classList.remove("hidden"));
-  started = true; banner(S.name); Net.connect(); };
+  started = true; banner(S.name); Net.connect(); X.start && X.start(); };
 $("resetBtn").onclick = () => { $("start").classList.remove("hidden"); started = false; Net.close(); path = []; };
 function persist() { localStorage.setItem(SAVE_KEY, JSON.stringify({ v: VER, breed: P.breed, style: P.style, nick: P.nick, scene: P.scene, tx: P.tx, ty: P.ty, dir: P.dir })); }
 function banner(t) { const b = $("banner"); b.textContent = "♡ " + t + " ♡"; b.classList.add("show"); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove("show"), 1800); }
 // ---------- 입력 ----------
 const KEYDIR = { arrowup: "up", w: "up", arrowdown: "down", s: "down", arrowleft: "left", a: "left", arrowright: "right", d: "right" };
-addEventListener("keydown", e => { if (typing) { if (e.key === "Escape") $("chatIn").blur(); return; }
+addEventListener("keydown", e => { if (e.target !== $("chatIn") && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return; if (typing) { if (e.key === "Escape") $("chatIn").blur(); return; }
   const k = e.key.toLowerCase();
   if (k === "enter" && started && !uiOpen) { e.preventDefault(); $("chatIn").focus(); return; }
   keys[k] = 1; if (KEYDIR[k]) { path = []; e.preventDefault(); }
+  if (started && !uiOpen && X.key && X.key(k, e)) return;
   if ((k === " " || k === "e") && started && !uiOpen && near) { e.preventDefault(); interact(); } if (k === "escape") closeAll(); });
 addEventListener("keyup", e => keys[e.key.toLowerCase()] = 0);
 $("chatIn").onfocus = () => { typing = true; keys = {}; }; $("chatIn").onblur = () => typing = false;
@@ -123,19 +125,19 @@ function jm(e) { const r = jb.getBoundingClientRect(), R = r.width / 2; let dx =
   kn.style.transform = `translate(${dx}px,${dy}px)`; path = []; joyDir = m < 12 ? null : Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"); }
 $("actBtn").onclick = () => interact();
 // ---------- 대화 / 게시판 ----------
-function closeAll() { $("dialog").classList.add("hidden"); $("board").classList.add("hidden"); uiOpen = false; }
-function say(text, choices) { uiOpen = true; $("dialog").classList.remove("hidden"); $("dlgName").textContent = C.owner.name; $("dlgText").textContent = text; $("dlgText").style.whiteSpace = "pre-line";
+function closeAll() { $("dialog").classList.add("hidden"); $("board").classList.add("hidden"); uiOpen = false; X.closeAll && X.closeAll(); }
+function say(text, choices, who) { uiOpen = true; $("dialog").classList.remove("hidden"); $("dlgName").textContent = who || C.owner.name; $("dlgText").textContent = text; $("dlgText").style.whiteSpace = "pre-line";
   const ch = $("dlgChoices"); ch.innerHTML = ""; (choices || []).forEach(([t, f]) => { const b = document.createElement("button"); b.textContent = t; b.onclick = f; ch.append(b); }); }
 function ownerMenu(text) { say(text, [["👋 인사", () => ownerMenu(`${P.nick}! 오늘도 털이 반짝반짝하네요 ✨ ${STYLE_NAME(P.style)} ${BREEDS[P.breed]} 친구는 언제나 환영이에요.`)],
   ["✂️ 미용 메뉴 안내", () => ownerMenu(C.menus.map(m => `• ${m.name} — ${m.price}`).join("\n"))],
-  ["📅 예약 방법", () => ownerMenu(C.reservationHowTo)], ["⏰ 영업시간", () => ownerMenu(C.shop.hours)], ["📌 게시판 보기", openBoard], ["닫기", closeAll]]); }
+  ["📅 예약 방법", () => ownerMenu(C.reservationHowTo)], ["⏰ 영업시간", () => ownerMenu(C.shop.hours)], ["📌 게시판 보기", openBoard], ["🎁 심부름(퀘스트)", () => X.questMenu()], ["📖 방명록", () => X.openGB()], ["닫기", closeAll]]); }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function openBoard() { closeAll(); uiOpen = true; $("board").classList.remove("hidden");
   $("notices").innerHTML = C.board.notices.map(n => `<li><b>${esc(n.date)}</b> ${esc(n.text)}</li>`).join("");
   $("slots").innerHTML = C.board.slots.map(s => `<div class="slot">${esc(s.day)} ${s.times.map(t => `<span>${esc(t)}</span>`).join("")}</div>`).join("");
-  $("contact").href = C.board.contactLink; }
+  $("contact").href = C.board.contactLink; X.boardExtra && X.boardExtra(); }
 $("closeBoard").onclick = closeAll;
-function interact() { if (!near) return; if (near.k === "npc") { IN.npc.dir = faceTo(IN.npc, P); ownerMenu(`${C.owner.greeting}\n무엇을 도와드릴까요?`); } else openBoard(); }
+function interact() { if (!near) return; if (near.k === "gb") { X.openGB(); return; } if (near.k === "npc") { IN.npc.dir = faceTo(IN.npc, P); ownerMenu(`${C.owner.greeting}\n무엇을 도와드릴까요?`); } else openBoard(); }
 const faceTo = (a, b) => Math.abs(b.tx - a.tx) > Math.abs(b.ty - a.ty) ? (b.tx > a.tx ? "right" : "left") : (b.ty > a.ty ? "down" : "up");
 // ---------- 이동 (타일 단위) ----------
 const DV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
@@ -145,6 +147,7 @@ function update(dt) {
   if (!started) return;
   if (P.prog < 1) { stepActor(P, dt); if (P.prog < 1) return; arrive(); }
   if (uiOpen || typing) { P.moving = false; return; }
+  X.update && X.update(dt);
   const S = SCN[P.scene]; let d = wantedDir(), nx, ny;
   if (d) { [nx, ny] = [P.tx + DV[d][0], P.ty + DV[d][1]]; }
   else if (path.length) { [nx, ny] = path[0]; d = nx > P.tx ? "right" : nx < P.tx ? "left" : ny > P.ty ? "down" : "up"; }
@@ -157,10 +160,11 @@ function stepActor(a, dt) { if (a.prog >= 1) { a.moving = false; return; } a.pro
   a.px = (a.fx + (a.tx - a.fx) * a.prog) * T + 8; a.py = (a.fy + (a.ty - a.fy) * a.prog) * T + 14; a.moving = true; a.walkT = (a.walkT || 0) + dt; a.walkUntil = performance.now() + 140; }
 function arrive() { const S = SCN[P.scene];
   if (S.isDoor(P.tx, P.ty)) { const N = S === OUT ? IN : OUT, sp = N === OUT ? OUT.exit : IN.spawn; place(P, N, sp.x, sp.y, sp.dir); path = []; banner(N.name); Net.move(); }
-  persist(); }
+  persist(); X.arrive && X.arrive(); }
 function updateNear() { near = null; if (!started) return;
   if (P.scene === "in") { if (Math.abs(P.tx - IN.npc.tx) + Math.abs(P.ty - IN.npc.ty) <= 3) near = { k: "npc", x: IN.npc.tx * T + 8, y: IN.npc.ty * T - 30 };
-    else if (P.tx <= 6 && P.ty <= 7) near = { k: "board", x: 56, y: 70 }; }
+    else if (P.tx <= 6 && P.ty <= 7) near = { k: "board", x: 56, y: 70 };
+    else if (P.tx >= 14 && P.ty >= 12 && P.tx <= 20) near = { k: "gb", x: 18 * T, y: 13 * T - 20 }; }
   else if (Math.abs(P.tx - boardAt.x) + Math.abs(P.ty - boardAt.y) <= 3) near = { k: "sign", x: boardAt.x * T + 8, y: boardAt.y * T - 34 };
   $("actBtn").classList.toggle("hidden", !near || uiOpen); $("actBtn").textContent = near?.k === "npc" ? "말걸기" : "보기"; }
 // ---------- 네트워크 (서버 없으면 혼자 모드) ----------
@@ -171,18 +175,19 @@ const Net = { ws: null, id: null, online: false,
     w.onopen = () => { clearTimeout(to); this.online = true; w.send(JSON.stringify({ t: "hello", nick: P.nick, breed: P.breed, style: P.style, scene: P.scene, tx: P.tx, ty: P.ty, dir: P.dir })); sys("마을에 접속했어요. Enter로 채팅할 수 있어요."); };
     w.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch { return; } this.handle(m); };
     w.onclose = () => { clearTimeout(to); if (this.online) sys("서버 연결이 끊겼어요. 혼자 모드로 계속해요."); this.offline(); }; },
-  offline() { this.online = false; this.ws = null; others.clear(); setOnline(); },
+  offline() { X.net && X.net({ t: "offline" }); this.online = false; this.ws = null; others.clear(); setOnline(); },
   close() { if (this.ws) { this.online = false; this.ws.onclose = null; this.ws.close(); } others.clear(); setOnline(); },
   send(o) { if (this.online && this.ws.readyState === 1) this.ws.send(JSON.stringify(o)); },
   move() { this.send({ t: "move", scene: P.scene, tx: P.tx, ty: P.ty, dir: P.dir }); },
   chat(text) { bubble(P, text); log(P.nick, text); if (this.online) this.send({ t: "chat", text }); },
   handle(m) {
-    if (m.t === "welcome") { this.id = m.id; others.clear(); m.players.forEach(p => upsert(p, true)); }
+    if (m.t === "welcome") { this.id = m.id; others.clear(); m.players.forEach(p => upsert(p, true)); X.net && X.net(m); }
     else if (m.t === "join") { upsert(m.p, true); sys(`${m.p.nick} 님이 들어왔어요.`); }
     else if (m.t === "move") upsert(m.p, false);
-    else if (m.t === "leave") { const o = others.get(m.id); if (o) sys(`${o.nick} 님이 나갔어요.`); others.delete(m.id); }
+    else if (m.t === "leave") { X.net && X.net(m); const o = others.get(m.id); if (o) sys(`${o.nick} 님이 나갔어요.`); others.delete(m.id); }
     else if (m.t === "chat") { if (m.id === this.id) return; const o = others.get(m.id); if (o) bubble(o, m.text); if (m.scene === P.scene) log(m.nick, m.text); }
     else if (m.t === "notice") sys(m.text);
+    else X.net && X.net(m);
     setOnline(); } };
 function upsert(p, snap) { let o = others.get(p.id); const S = SCN[p.scene] || OUT;
   // 다른 버전(예전 큰 맵)에서 온 좌표는 안전한 칸으로
@@ -198,9 +203,15 @@ function sys(text) { const s = document.createElement("span"); s.className = "sy
 const FONT = "Jua, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
 function drawDog(a, t) { const walking = a.moving || t < (a.walkUntil || 0), v = a.dir === "down" ? "front" : a.dir === "up" ? "back" : "side";
   let f; if (walking) f = Math.floor((a.walkT || 0) / (STEP_MS * 2 / FR)) % FR; else { const u = (t + (a.id || 0) * 777) % 4200; f = u > 3950 ? -3 : (Math.floor(u / 900) % 2 ? -2 : -1); }
-  const sp = DaonDog.render(a.breed, a.style, v, f), x = Math.round(a.px), y = Math.round(a.py);
-  g.drawImage(IMG.shadow, x - 11, y - 4);
-  if (a.dir === "left") { g.save(); g.translate(2 * x, 0); g.scale(-1, 1); g.drawImage(sp, x - 20, y - DaonDog.GY); g.restore(); } else g.drawImage(sp, x - 20, y - DaonDog.GY); }
+  const em = a.em && t - a.emT < (X.EMDUR?.[a.em] || 2000) ? a.em : null; if (em === "sit" && walking) a.em = null;
+  if (em && !walking) f = em === "bark" || em === "eat" ? -3 : -1;
+  const sp = DaonDog.render(a.breed, a.style, v, f); let x = Math.round(a.px), y = Math.round(a.py), cut = 0;
+  if (em === "wag") x += Math.floor(t / 90) % 2 ? 1 : -1; if (em === "bark") y -= Math.floor(t / 120) % 3 === 0 ? 2 : 0; if (em === "eat") y += Math.floor(t / 160) % 2; if (em === "greet") y -= Math.floor(t / 150) % 2 * 2;
+  if (em === "sit") cut = 4;
+  g.drawImage(IMG.shadow, x - 11, y - 4); const H = sp.height - cut;
+  if (a.dir === "left") { g.save(); g.translate(2 * x, 0); g.scale(-1, 1); g.drawImage(sp, 0, 0, sp.width, H, x - 20, y - DaonDog.GY + cut, sp.width, H); g.restore(); } else g.drawImage(sp, 0, 0, sp.width, H, x - 20, y - DaonDog.GY + cut, sp.width, H);
+  if (cut) { g.fillStyle = "rgba(122,90,154,.35)"; g.fillRect(x - 9, y - 1, 18, 1); }
+  X.dogExtra && X.dogExtra(a, x, y, t); }
 function drawGroomer(n, t) { const v = n.dir === "down" ? "front" : n.dir === "up" ? "back" : "side", im = IMG.groomer[v][Math.floor(t / 700) % 2], x = n.tx * T + 8, y = n.ty * T + 14;
   g.drawImage(IMG.shadow, x - 11, y - 4);
   if (n.dir === "left") { g.save(); g.translate(2 * x, 0); g.scale(-1, 1); g.drawImage(im, x - 14, y - 38); g.restore(); } else g.drawImage(im, x - 14, y - 38); }
@@ -233,6 +244,7 @@ function drawWorld(t) { const S = SCN[P.scene];
   const addDog = (a, mine) => { L.push({ y: a.py, f: () => drawDog(a, t) }); tops.push([a, mine]); };
   for (const o of others.values()) if (o.scene === P.scene) addDog(o, false); addDog(P, true);
   if (S === IN) { const n = IN.npc; if (!uiOpen && near?.k !== "npc" && Math.random() < .002) n.dir = ["down", "left", "right"][Math.floor(Math.random() * 3)]; L.push({ y: n.ty * T + 14, f: () => drawGroomer(n, t) }); }
+  X.world && X.world(L, S, t);
   L.sort((a, b) => a.y - b.y).forEach(i => i.f());
   return tops; }
 function drawOverlay(tops, t) { const S = SCN[P.scene];
@@ -242,8 +254,10 @@ function drawOverlay(tops, t) { const S = SCN[P.scene];
     const [bx, by] = toScreen(boardAt.x * T + 8, boardAt.y * T + 18); pill(bx, by, "📌 게시판", "#fff8e0", "#8a5a30", "#d5a574", 13); }
   else { const [x, y] = toScreen(11 * T, 16 * T - 6 + 0); pill(x, y - 14 + Math.sin(t / 300) * 3, "▼ 밖으로", "#ffffff", "#e0709c", "#ff9fc0", 14);
     const [bx, by] = toScreen(56, 74); pill(bx, by, "📌 게시판", "#fff8e0", "#8a5a30", "#d5a574", 13);
+    const [gx, gy] = toScreen(18 * T, 13 * T + 4); pill(gx, gy, "📖 방명록", "#fff0f7", "#c0407a", "#ff9fc0", 13);
     const n = IN.npc; const [nx, ny] = toScreen(n.tx * T + 8, n.ty * T - 26); pill(nx, ny - 10, "✂️ " + C.owner.name, "#ff9fc0", "#ffffff", "#c45a8a", 14); }
-  if (near && !uiOpen) { const [x, y] = toScreen(near.x, near.y); pill(x, y - Math.abs(Math.sin(t / 250)) * 4, near.k === "npc" ? "💬 말걸기 (Space)" : "👀 보기 (Space)", "#fff3b0", "#7a4a20", "#e0b030", 14); } }
+  X.overlay && X.overlay(tops, t);
+  if (near && !uiOpen) { const [x, y] = toScreen(near.x, near.y); pill(x, y - Math.abs(Math.sin(t / 250)) * 4, near.k === "npc" ? "💬 말걸기 (Space)" : near.k === "gb" ? "📖 방명록 (Space)" : "👀 보기 (Space)", "#fff3b0", "#7a4a20", "#e0b030", 14); } }
 function drawMinimap() { const m = $("minimap"), c = m.getContext("2d"), S = SCN[P.scene], bg = S === OUT ? IMG.outBg : IMG.inBg; c.imageSmoothingEnabled = false; c.clearRect(0, 0, 150, 112);
   if (bg) c.drawImage(bg, 0, 0, bg.width, S.h, 0, 0, 150, 112); const sx = 150 / S.w, sy = 112 / S.h;
   for (const o of others.values()) if (o.scene === P.scene) { c.fillStyle = "#4d8cf0"; c.fillRect(Math.round(o.px * sx) - 2, Math.round(o.py * sy) - 2, 4, 4); }
@@ -264,6 +278,7 @@ function loop(t) { const dt = Math.min(60, t - lt); lt = t; if (ready) update(dt
     g.setTransform(view.d, 0, 0, view.d, 0, 0); drawOverlay(tops, t);
     $("sceneName").textContent = (S === IN ? "✂️ " : "🌳 ") + S.name; if (started && t - mm > 100) { mm = t; drawMinimap(); } }
   requestAnimationFrame(loop); }
+Object.assign(X, { P, others, Net, SCN, OUT, IN, T, walk, findPath, setPath: p => { path = p; }, getPath: () => path, g, toScreen, toWorld, pill, view, say, ownerMenu, closeAll, setUi: v => { uiOpen = v; }, isUi: () => uiOpen, isTyping: () => typing, isStarted: () => started, sys, log, bubble, banner, fountainAt, esc, faceTo, place, persist, IMG, FONT, STEP_MS, wantedDir });
 build(); drawPreview(0); buildBreeds(); buildStyles();
 requestAnimationFrame(loop);
 window.__daon = { P, others, Net, tp(s, x, y) { place(P, SCN[s], x, y); Net.move(); }, walkTo(x, y) { path = findPath(SCN[P.scene], P.tx, P.ty, x, y); }, interact, openBoard, walk: (s, x, y) => walk(SCN[s], x, y), view, SCN,

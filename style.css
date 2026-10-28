@@ -55,3 +55,33 @@ button:active,.btn:active{transform:translateY(3px);box-shadow:none}
 #chatlog b{color:#e0589a;font-weight:normal}#chatlog .sys{color:#4a8a6a}
 @media (max-width:600px){#minimap{width:96px;height:72px;top:54px}#joy{left:14px;bottom:205px;width:110px;height:110px}#knob{left:29px;top:29px}#actBtn{right:14px;bottom:215px;width:80px;height:80px}#banner{font-size:26px}#chatlog{bottom:58px}.card{padding:10px 8px 12px}h1{font-size:22px}.breed canvas.px,.style canvas.px{width:56px;height:54px}#preview{width:264px}#dialog{font-size:16px}}
 @media (min-width:601px){#breeds{grid-template-columns:repeat(8,1fr);gap:4px}.breed{font-size:11px}.breed canvas.px{width:56px;height:54px}}
+/* ===== v6 상호작용 ===== */
+#tools{position:fixed;right:10px;top:184px;display:flex;flex-direction:column;gap:6px;z-index:6}
+#tools button{padding:4px 8px;font-size:15px;display:flex;align-items:center;gap:4px;min-width:44px;min-height:40px;justify-content:flex-start}
+#tools button span{font-size:13px}#tools button b{font-weight:normal;color:#e0589a}
+#tools .resv{border-color:#d9447f;background:linear-gradient(#ffb0d2,#ff7fb5);color:#fff;box-shadow:0 3px 0 #d9447f;text-shadow:0 1px 0 #d9447f}
+#emoMenu{position:fixed;right:130px;top:184px;z-index:7;background:#fbfdff;border:9px solid #74a9ec;border-image:var(--f-blue) 3 fill/9px/0 stretch;padding:6px;display:flex;flex-direction:column;gap:5px;width:200px}
+#emoMenu button{font-size:15px;text-align:left}#emoMenu kbd{float:right;font-family:inherit;color:#a58bdc}#emoMenu .tiny{margin:4px 0 0;font-size:11px}
+#friendBtn{position:fixed;right:124px;bottom:96px;width:78px;height:78px;border-radius:50%;background:#8ec5ff;color:#fff;font-size:17px;line-height:1.1;z-index:6;border:4px solid #fff;box-shadow:0 5px 0 #4d8cf0;clip-path:none;text-shadow:0 2px 0 #4d8cf0}
+#followChip{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:6;background:#fff0f7;border:3px solid #ff86b8;padding:3px 4px 3px 12px;display:flex;gap:8px;align-items:center;color:#c0407a;box-shadow:0 3px 0 #74a9ec}
+#followChip button{padding:2px 10px;font-size:13px}
+.roomcard,.gbcard{width:min(96vw,620px)}
+#roomCv{width:100%;height:auto;max-width:576px;aspect-ratio:3/2;image-rendering:pixelated;border:4px solid #74a9ec;box-shadow:0 4px 0 #ff9ccf;touch-action:none;cursor:pointer;display:block;margin:0 auto}
+#palette{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:6px 0}
+.pal{padding:3px 1px;display:flex;flex-direction:column;align-items:center;font-size:11px;min-height:56px}
+.pal canvas{height:30px!important;width:auto!important;image-rendering:pixelated;max-width:44px;object-fit:contain}
+.pal.sel{border-color:#ff86b8;background:#ffe9f3}
+#roomTools>button,.roomcard>button{margin:4px 3px}
+#visitList{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;font-size:13px;color:#9a9ac8;margin:4px 0}
+#visitList button{font-size:13px;padding:4px 10px}
+.tabs{display:flex;gap:6px;margin-bottom:8px}.tabs .gbtab{flex:1}.gbtab.sel{border-color:#ff86b8;background:#ffe9f3;color:#c0407a}
+#gbForm{display:flex;gap:6px}#gbText{flex:1;font:inherit;font-size:16px;border:3px solid #74a9ec;padding:7px 10px;color:#5a4a80;outline:none;min-width:0}
+.primary.sm{font-size:15px;padding:6px 14px}
+#gbList{text-align:left;max-height:46vh;overflow:auto;margin:6px 0}
+.gbe{background:#fff;border:2px solid #c5ddf8;margin:6px 0;padding:6px 10px}.gbe.ilchon{border-color:#ffc2dd;background:#fff7fb}
+.gbh{display:flex;gap:8px;align-items:center;font-size:13px;color:#9a9ac8}.gbh b{font-weight:normal;color:#e0589a;font-size:15px}
+.gbt{word-break:break-all;white-space:pre-wrap;margin-top:2px}.gbe .del{margin-left:auto;padding:1px 8px;font-size:12px}
+.empty{color:#9a9ac8;text-align:center}
+.ph{display:inline-block;background:#ffe066;color:#7a5a20;font-size:11px;padding:0 6px;margin-right:6px}
+@media (max-width:600px){#tools{top:136px;right:8px;gap:4px}#tools button{min-width:42px;min-height:38px;padding:3px 6px;font-size:16px}#tools button span{display:none}
+ #emoMenu{right:62px;top:136px;width:180px}#friendBtn{right:14px;bottom:305px;width:70px;height:70px;font-size:15px}#palette{grid-template-columns:repeat(4,1fr)}#followChip{top:52px;font-size:13px}}
